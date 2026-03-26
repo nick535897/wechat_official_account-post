@@ -18,10 +18,21 @@ def main(title: str, content: str, app_id: str, app_secret: str, author: str = "
 
     thumb_media_id = None
     if thumb_url:
-        url = f"https://api.weixin.qq.com/cgi-bin/media/uploadurl?access_token={access_token}&type=thumb"
-        payload = json.dumps({"url": thumb_url}).encode("utf-8")
-        req = urllib.request.Request(url, data=payload, method="POST")
-        req.add_header("Content-Type", "application/json")
+        resp = urllib.request.urlopen(thumb_url, timeout=30)
+        file_data = resp.read()
+        content_type = resp.headers.get("Content-Type", "image/png")
+        ext = content_type.split("/")[1]
+        filename = f"thumb.{ext}"
+        boundary = "----WebKitFormBoundary" + "x" * 16
+
+        body = f"--{boundary}\r\n"
+        body += f'Content-Disposition: form-data; name="media"; filename="{filename}"\r\n'
+        body += f"Content-Type: {content_type}\r\n\r\n"
+        body = body.encode() + file_data + b"\r\n--" + boundary.encode() + b"--\r\n"
+
+        url = f"https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={access_token}&type=thumb"
+        req = urllib.request.Request(url, data=body, method="POST")
+        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
 
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
@@ -55,9 +66,27 @@ def main(title: str, content: str, app_id: str, app_secret: str, author: str = "
 
 
 if __name__ == "__main__":
+    import sys
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--title", required=True)
+    parser.add_argument("--content", required=True)
+    parser.add_argument("--app-id", required=True)
+    parser.add_argument("--app-secret", required=True)
+    parser.add_argument("--author", default="")
+    parser.add_argument("--digest", default="")
+    parser.add_argument("--thumb-url")
+    parser.add_argument("--access-token")
+    args = parser.parse_args()
+
     main(
-        title="测试标题",
-        content="<p>正文</p>",
-        app_id="wx118ca05fd5786da4",
-        app_secret="f938c2e1a93c504af3ef234be848cdb9",
+        title=args.title,
+        content=args.content,
+        app_id=args.app_id,
+        app_secret=args.app_secret,
+        author=args.author,
+        digest=args.digest,
+        thumb_url=args.thumb_url,
+        access_token=args.access_token,
     )
