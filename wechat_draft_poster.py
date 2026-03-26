@@ -37,11 +37,12 @@ def main(title: str, content: str, app_id: str, app_secret: str, author: str = "
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
 
+        print(f"Upload thumb response: {json.dumps(result, indent=2, ensure_ascii=False)}")
         if "media_id" in result:
             thumb_media_id = result["media_id"]
             print(f"Got thumb_media_id: {thumb_media_id}")
         else:
-            print(f"Upload thumb failed: {json.dumps(result, indent=2, ensure_ascii=False)}")
+            print(f"Upload thumb failed")
 
     article = {
         "title": title,
